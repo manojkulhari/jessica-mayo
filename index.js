@@ -8,20 +8,59 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// In-memory session simulation (reset every deploy/restart)
+const sessions = {};
+
 app.post("/webhook", (req, res) => {
   const userQuery = (req.body.query || "").toLowerCase();
-  console.log("User Query:", userQuery);
+  const sessionId = req.body.sessionId || "default";
 
-  let reply = "I'm not sure how to help with that.";
+  if (!sessions[sessionId]) {
+    sessions[sessionId] = {
+      step: "ask_name",
+      data: {}
+    };
+  }
 
-  if (userQuery.includes("appointment")) {
-    reply = "Sure, I can help book an appointment. Please tell me your full name.";
-  } else if (userQuery.includes("hello") || userQuery.includes("hi")) {
-    reply = "Hi, I'm Jessica from Mayo Clinic. How can I help you today?";
-  } else if (userQuery.includes("thank")) {
-    reply = "You're welcome! Let me know if you need anything else.";
-  } else if (userQuery.includes("emergency")) {
-    reply = "If this is an emergency, please dial your local emergency number or visit the nearest hospital.";
+  const session = sessions[sessionId];
+  let reply = "";
+
+  switch (session.step) {
+    case "ask_name":
+      reply = "Can I have your full name, please?";
+      session.step = "get_name";
+      break;
+
+    case "get_name":
+      session.data.name = userQuery;
+      reply = `Hi ${session.data.name}, what is your date of birth?`;
+      session.step = "get_dob";
+      break;
+
+    case "get_dob":
+      session.data.dob = userQuery;
+      reply = `Got it. Which department would you like to book an appointment with?`;
+      session.step = "get_department";
+      break;
+
+    case "get_department":
+      session.data.department = userQuery;
+      reply = `And what date and time would you prefer for the appointment?`;
+      session.step = "get_datetime";
+      break;
+
+    case "get_datetime":
+      session.data.datetime = userQuery;
+      reply = `Thanks ${session.data.name}, your appointment with ${session.data.department} is confirmed for ${session.data.datetime}.`;
+      session.step = "done";
+      break;
+
+    case "done":
+      reply = "Your appointment has already been booked. Do you need anything else?";
+      break;
+
+    default:
+      reply = "I'm not sure how to help with that.";
   }
 
   res.json({ reply });
