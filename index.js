@@ -1,39 +1,42 @@
 const express = require("express");
 const app = express();
-const bodyParser = require("body-parser");
 const cors = require("cors");
 
-// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// POST: Dialogflow or custom frontend webhook
 app.post("/webhook", async (req, res) => {
-  const params = req.body.queryResult?.parameters || req.body; // handles both Dialogflow & custom
+  const userQuery = (req.body.query || "").toLowerCase();
+  console.log("Received:", userQuery);
 
-  const name = params.patient_name || params.name || "Guest";
-  const dob = params.dob || "not provided";
-  const department = params.department || "General";
-  const date_time = params.date_time || "soon";
+  let name = "Guest";
+  let department = "General";
+  let date_time = "soon";
 
-  // Log the appointment request
-  console.log("📅 Appointment booked:", { name, dob, department, date_time });
+  // Extract basic info from the user query (rudimentary demo logic)
+  if (userQuery.includes("my name is")) {
+    name = userQuery.split("my name is")[1].trim().split(" ")[0];
+  }
+  if (userQuery.includes("cardiology")) department = "Cardiology";
+  else if (userQuery.includes("dermatology")) department = "Dermatology";
+  else if (userQuery.includes("pediatrics")) department = "Pediatrics";
+
+  if (userQuery.includes("tomorrow")) date_time = "tomorrow";
+  else if (userQuery.includes("next week")) date_time = "next week";
+  else if (userQuery.match(/\d{1,2} ?(am|pm)/)) {
+    const match = userQuery.match(/\d{1,2} ?(am|pm)/);
+    date_time = match[0];
+  }
 
   const reply = `Thanks ${name}, your appointment with ${department} is confirmed for ${date_time}.`;
-
-  res.json({
-    fulfillmentText: reply,
-    reply, // also support plain .reply for non-Dialogflow clients
-  });
+  res.json({ reply });
 });
 
-// GET: for browser check
 app.get("/", (req, res) => {
-  res.send("✅ Jessica backend is running fine on Render!");
+  res.send("Jessica Webhook is live ✅");
 });
 
-// Port fix for Render: must ONLY use process.env.PORT
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`✅ Jessica backend live on port ${port}`);
+  console.log("✅ Jessica backend live on port", port);
 });
