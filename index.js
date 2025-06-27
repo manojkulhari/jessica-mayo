@@ -3,29 +3,37 @@ const app = express();
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
+// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
+// POST: Dialogflow or custom frontend webhook
 app.post("/webhook", async (req, res) => {
-  const params = req.body.queryResult.parameters;
-  const name = params.patient_name;
-  const dob = params.dob;
-  const department = params.department;
-  const date_time = params.date_time;
+  const params = req.body.queryResult?.parameters || req.body; // handles both Dialogflow & custom
 
-  // Simulate saving (or log it for now)
-  console.log("New Appointment:", { name, dob, department, date_time });
+  const name = params.patient_name || params.name || "Guest";
+  const dob = params.dob || "not provided";
+  const department = params.department || "General";
+  const date_time = params.date_time || "soon";
+
+  // Log the appointment request
+  console.log("📅 Appointment booked:", { name, dob, department, date_time });
+
+  const reply = `Thanks ${name}, your appointment with ${department} is confirmed for ${date_time}.`;
 
   res.json({
-    fulfillmentText: `Thanks ${name}, your appointment with ${department} is confirmed for ${date_time}.`
+    fulfillmentText: reply,
+    reply, // also support plain .reply for non-Dialogflow clients
   });
 });
 
+// GET: for browser check
 app.get("/", (req, res) => {
-  res.send("Jessica Webhook is live!");
+  res.send("✅ Jessica backend is running fine on Render!");
 });
 
-const port = process.env.PORT || 3000;
+// Port fix for Render: must ONLY use process.env.PORT
+const port = process.env.PORT;
 app.listen(port, () => {
-  console.log("Server is running on port", port);
+  console.log(`✅ Jessica backend live on port ${port}`);
 });
