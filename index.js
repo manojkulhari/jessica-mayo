@@ -1,42 +1,36 @@
 const express = require("express");
-const app = express();
 const cors = require("cors");
+const bodyParser = require("body-parser");
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-app.post("/webhook", async (req, res) => {
+app.post("/webhook", (req, res) => {
   const userQuery = (req.body.query || "").toLowerCase();
-  console.log("Received:", userQuery);
+  console.log("User Query:", userQuery);
 
-  let name = "Guest";
-  let department = "General";
-  let date_time = "soon";
+  let reply = "I'm not sure how to help with that.";
 
-  // Extract basic info from the user query (rudimentary demo logic)
-  if (userQuery.includes("my name is")) {
-    name = userQuery.split("my name is")[1].trim().split(" ")[0];
-  }
-  if (userQuery.includes("cardiology")) department = "Cardiology";
-  else if (userQuery.includes("dermatology")) department = "Dermatology";
-  else if (userQuery.includes("pediatrics")) department = "Pediatrics";
-
-  if (userQuery.includes("tomorrow")) date_time = "tomorrow";
-  else if (userQuery.includes("next week")) date_time = "next week";
-  else if (userQuery.match(/\d{1,2} ?(am|pm)/)) {
-    const match = userQuery.match(/\d{1,2} ?(am|pm)/);
-    date_time = match[0];
+  if (userQuery.includes("appointment")) {
+    reply = "Sure, I can help book an appointment. Please tell me your full name.";
+  } else if (userQuery.includes("hello") || userQuery.includes("hi")) {
+    reply = "Hi, I'm Jessica from Mayo Clinic. How can I help you today?";
+  } else if (userQuery.includes("thank")) {
+    reply = "You're welcome! Let me know if you need anything else.";
+  } else if (userQuery.includes("emergency")) {
+    reply = "If this is an emergency, please dial your local emergency number or visit the nearest hospital.";
   }
 
-  const reply = `Thanks ${name}, your appointment with ${department} is confirmed for ${date_time}.`;
   res.json({ reply });
 });
 
 app.get("/", (req, res) => {
-  res.send("Jessica Webhook is live ✅");
+  res.send("Jessica backend is live ✅");
 });
 
-const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log("✅ Jessica backend live on port", port);
+  console.log(`✅ Jessica backend live on port ${port}`);
 });
